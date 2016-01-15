@@ -12,7 +12,6 @@ object Blender extends sbt.Build {
     settings = Settings.common ++ List(
       libraryDependencies ++= List(
         Library.kafka,
-        Library.jopt,
         Library.logback,
         Library.scalaCheck % "test",
         Library.scalaTest  % "test",

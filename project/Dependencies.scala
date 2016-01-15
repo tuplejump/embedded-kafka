@@ -7,7 +7,6 @@ object Version {
   final val Logback          = "1.0.7"
   final val JavaVersion      = scala.util.Properties.javaVersion
   final val JavaBinary       = JavaVersion.dropRight(5)
-  final val JOpt             = "3.2"
   final val Scala            = Seq("2.11.7", "2.10.5")
   final val ScalaCheck       = "1.12.5"
   final val ScalaLogging     = "3.1.0"
@@ -25,7 +24,6 @@ object Version {
 
 object Library {
   val kafka            = "org.apache.kafka"           %% "kafka"                % Version.Kafka excludeAll(Exclusions.forKafka: _*)
-  val jopt             = "net.sf.jopt-simple"         % "jopt-simple"           % Version.JOpt
   val logback          = "ch.qos.logback"             % "logback-classic"       % Version.Logback
   val scalaCheck       = "org.scalacheck"             %% "scalacheck"           % Version.ScalaCheck
   val scalaTest        = "org.scalatest"              %% "scalatest"            % Version.ScalaTest
@@ -41,6 +39,7 @@ object Exclusions {
     ExclusionRule("com.sun.jmx", "jmxri"),
     ExclusionRule("com.sun.jdmk", "jmxtools"),
     ExclusionRule("net.sf.jopt-simple", "jopt-simple"),
-    ExclusionRule("org.slf4j", "slf4j-simple")
+    ExclusionRule("org.slf4j", "slf4j-simple"),
+    ExclusionRule("org.slf4j", "slf4j-log4j12")
   )
 }
