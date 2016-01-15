@@ -1,0 +1,19 @@
+<configuration>
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[%level] [%date{ISO8601}] [%logger]: %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="console" />
+    </root>
+
+    <logger name="com.tuplejump" level="DEBUG"/>
+    <logger name="kafka" level="WARN" />
+    <logger name="org.apache.zookeeper.server.PrepRequestProcessor" level="ERROR"/>
+    <logger name="org.apache.zookeeper.ZooKeeper" level="WARN"/>
+    <logger name="org.apache.zookeeper.ClientCnxn" level="WARN"/>
+
+</configuration>

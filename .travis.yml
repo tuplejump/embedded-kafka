@@ -1,0 +1,10 @@
+language: scala
+jdk:
+  - oraclejdk8
+sudo: false
+scala:
+  - 2.10.5
+  - 2.11.7
+
+script:
+  - "sbt ++$TRAVIS_SCALA_VERSION -Dtravis=true test"

@@ -1,0 +1,31 @@
+# SBT
+lib_managed
+project/project
+target
+.history
+.lib/
+dist/*
+lib_managed/
+src_managed/
+project/project
+
+# Worksheets (Eclipse or IntelliJ)
+*.sc
+
+# IntelliJ
+.idea
+
+# Eclipse
+.cache*
+.classpath
+.project
+.scala_dependencies
+.settings
+.target
+.worksheet
+
+# Mac
+.DS_Store
+
+# Log files
+*.log
