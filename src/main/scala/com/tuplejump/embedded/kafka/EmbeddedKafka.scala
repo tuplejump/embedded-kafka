@@ -27,9 +27,9 @@ import kafka.server.{ KafkaConfig, KafkaServer }
 import kafka.utils.ZkUtils
 import org.I0Itec.zkclient.ZkClient
 
-final class EmbeddedKafka(settings: Settings, groupId: String) extends EmbeddedIO with Assertions with Logging {
+final class EmbeddedKafka(val settings: Settings) extends EmbeddedIO with Assertions with Logging {
 
-  def this() = this(new Settings, s"consumer-${scala.util.Random.nextInt(10000)}")
+  def this() = this(new Settings)
 
   import Embedded._
   import settings._
@@ -39,7 +39,7 @@ final class EmbeddedKafka(settings: Settings, groupId: String) extends EmbeddedI
     override def run() { shutdown() }
   })
 
-  val kafkaConfig: KafkaConfig = settings.kafkaConfig(kafkaConf, zkConf)
+  val kafkaConfig: KafkaConfig = settings.kafkaConfig
 
   val producerConfig: ProducerConfig = settings.producerConfig[StringEncoder](
     DefaultKafkaConnect, classOf[StringEncoder]
