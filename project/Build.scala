@@ -6,21 +6,19 @@ import de.heikoseeberger.sbtheader.AutomateHeaderPlugin
 
 object Blender extends sbt.Build {
 
-  lazy val embeddedKafka = Project(
-    id = "embedded-kafka",
-    base = file("."),
-    settings = Settings.common ++ List(
-      libraryDependencies ++= List(
-        Library.kafka,
-        Library.logback,
-        Library.scalaCheck % "test",
-        Library.scalaTest  % "test",
-        CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, minor)) if minor < 11 => Library.Cross.slf4j
-          case _                              => Library.Cross.scalaLogging
-        }
-      ))
-  ).enablePlugins(AutomateHeaderPlugin) configs IntegrationTest
+  lazy val root = project.in(file("."))
+    .settings(Settings.common ++ Seq(libraryDependencies ++= Seq(
+      Library.akkaStreams,
+      Library.kafka,
+      Library.logback,
+      Library.scalaCheck % "test",
+      Library.scalaTest  % "test",
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, minor)) if minor < 11 => Library.Cross.slf4j
+        case _                              => Library.Cross.scalaLogging
+      }
+    )))
+  .enablePlugins(AutomateHeaderPlugin) configs IntegrationTest
 
 }
 
@@ -145,6 +143,7 @@ object Settings extends sbt.Build {
           Seq.empty[wartremover.Wart]
         case _ =>
           Warts.allBut(
+            Wart.Any,//todo exclude actor
             Wart.Throw,
             Wart.DefaultArguments,
             Wart.NonUnitStatements,
@@ -184,9 +183,6 @@ object Settings extends sbt.Build {
     testOptions in IntegrationTest ++= testOptionSettings,
     fork in Test := true,
     fork in IntegrationTest := true,
-    javaOptions in IntegrationTest ++= Seq(
-      "-XX:MaxPermSize=256M", "-Xmx1g", "-Dsun.io.serialization.extendedDebugInfo=true"
-    ),
     (compile in IntegrationTest) <<= (compile in Test, compile in IntegrationTest) map { (_, c) => c },
     (internalDependencyClasspath in IntegrationTest) <<= Classpaths.concat(internalDependencyClasspath in IntegrationTest, exportedProducts in Test)
   )

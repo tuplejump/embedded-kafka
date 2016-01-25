@@ -41,7 +41,7 @@ final class EmbeddedKafka(val settings: Settings) extends EmbeddedIO with Assert
 
   val kafkaConfig: KafkaConfig = settings.kafkaConfig
 
-  val producerConfig: ProducerConfig = settings.producerConfig[StringEncoder](
+  val producerConfig: ProducerConfig = settings.producerConfig(
     DefaultKafkaConnect, classOf[StringEncoder]
   )
 

@@ -3,6 +3,7 @@
 import sbt._
 
 object Version {
+  val AkkaStreams            = "2.0" //1.0
   final val Kafka            = "0.9.0.0"
   final val Logback          = "1.0.7"
   final val JavaVersion      = scala.util.Properties.javaVersion
@@ -23,10 +24,13 @@ object Version {
 }
 
 object Library {
-  val kafka            = "org.apache.kafka"           %% "kafka"                % Version.Kafka excludeAll(Exclusions.forKafka: _*)
-  val logback          = "ch.qos.logback"             % "logback-classic"       % Version.Logback
-  val scalaCheck       = "org.scalacheck"             %% "scalacheck"           % Version.ScalaCheck
-  val scalaTest        = "org.scalatest"              %% "scalatest"            % Version.ScalaTest
+  val akkaStreams      = "com.typesafe.akka"          %% "akka-stream-experimental"     % Version.AkkaStreams
+  val akkaHttp         = "com.typesafe.akka"          %% "akka-http-core-experimental"  % Version.AkkaStreams
+  val akkaTestKit      = "com.typesafe.akka"          %% "akka-testkit"                 % Version.AkkaStreams
+  val kafka            = "org.apache.kafka"           %% "kafka"                        % Version.Kafka excludeAll(Exclusions.forKafka: _*)
+  val logback          = "ch.qos.logback"             % "logback-classic"               % Version.Logback
+  val scalaCheck       = "org.scalacheck"             %% "scalacheck"                   % Version.ScalaCheck
+  val scalaTest        = "org.scalatest"              %% "scalatest"                    % Version.ScalaTest
 
   object Cross {
     val slf4j          = "org.slf4j"                  % "slf4j-api"             % Version.Slf4j

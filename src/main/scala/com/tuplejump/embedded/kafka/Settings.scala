@@ -20,6 +20,7 @@ import java.net.InetAddress
 import java.util.Properties
 
 import kafka.producer.ProducerConfig
+import kafka.serializer.Encoder
 import kafka.server.KafkaConfig
 import Embedded._
 
@@ -42,7 +43,7 @@ class Settings(val zkConf: ZookeeperConfiguration, val kafkaConf: KafkaConfigura
     new KafkaConfig(props)
   }
 
-  def producerConfig[A](brokerAddress: String, serializer: Class[A]): ProducerConfig = {
+  def producerConfig(brokerAddress: String, serializer: Class[_]): ProducerConfig = {
     val c = Map(
       "metadata.broker.list" -> brokerAddress,
       "request.required.acks" -> "-1",
@@ -97,12 +98,6 @@ object Embedded {
 
   final case class KafkaConfiguration(settings: Map[String, String]) extends ServerConfig {
 
-    def connectTo: (String, String) = {
-      val host = settings.getOrElse("host.name", DefaultHostString)
-      val port = settings.getOrElse("port", DefaultKafkaPort.toString)
-      (host, port)
-    }
-
     def kafkaParams(groupId: Option[String]): Map[String, String] =
       settings ++ Map(
         "group.id" -> groupId.getOrElse(DefaultGroupId),
@@ -111,14 +106,13 @@ object Embedded {
 
   object KafkaConfiguration extends EmbeddedIO {
 
-    def settings(host: String, port: Int, zkConnect: String): Map[String,String] =
+    def settings(kafkaConnect: String, zkConnect: String): Map[String,String] =
       Map(
         "broker.id" -> "0",
-        "host.name" -> host,
-        "port" -> port.toString,
+       // "host.name" -> host, "port" -> port.toString,
         "metadata.broker.list" -> "host",
-        "advertised.host.name" -> host,
-        "advertised.port" -> port.toString,
+        //"advertised.host.name" -> host,
+        //"advertised.port" -> port.toString,
         "log.dir" -> createTempDir("kafka-embedded-tmp").getAbsolutePath,
         "zookeeper.connect" -> zkConnect,
         "replica.high.watermark.checkpoint.interval.ms" -> "5000",
@@ -127,12 +121,10 @@ object Embedded {
         "controlled.shutdown.enable" -> "false",
         "auto.leader.rebalance.enable" -> "false")
 
-    def apply(host: Option[String] = None,
-              port: Option[Int] = None,
+    def apply(kafkaConnect: Option[String] = None,
               zkConnect: Option[String] = None): KafkaConfiguration = KafkaConfiguration(
       settings(
-        host.getOrElse(DefaultHostString),
-        port.getOrElse(DefaultKafkaPort),
+        kafkaConnect.getOrElse(DefaultKafkaConnect),
         zkConnect.getOrElse(DefaultZookeeperConnect)))
   }
 }
