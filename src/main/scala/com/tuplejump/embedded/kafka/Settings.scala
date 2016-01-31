@@ -16,115 +16,74 @@
 
 package com.tuplejump.embedded.kafka
 
-import java.net.InetAddress
 import java.util.Properties
 
+import scala.collection.JavaConverters._
 import kafka.producer.ProducerConfig
-import kafka.serializer.Encoder
-import kafka.server.KafkaConfig
-import Embedded._
 
 /**
  * TODO remove hard coded, defaults, add config.
  */
-class Settings(val zkConf: ZookeeperConfiguration, val kafkaConf: KafkaConfiguration) extends EmbeddedIO {
+trait Settings extends EmbeddedIO {
 
-  def this(values: Map[String,String]) =
-    this(ZookeeperConfiguration(), KafkaConfiguration(values))
+  def brokerConfig(kafkaConnect: String, zkConnect: String): Map[String,String] =
+    Map(
+      // "broker.id" -> brokerId.toString,
+      "metadata.broker.list" -> kafkaConnect,
+      "log.cleanup.policy" -> "delete",
+      "log.dirs" -> createTempDir("kafka-embedded-tmp").getAbsolutePath,
+      "zookeeper.connect" -> zkConnect,
+      //"zookeeper.connection.timeout.ms" -> "1000",//	The max time that the client waits to establish a connection to zookeeper. If not set, the value in zookeeper.session.timeout.ms is used	int	null		high
+      //"zookeeper.session.timeout.ms" -> "1000",
+      "replica.high.watermark.checkpoint.interval.ms" -> "5000",
+      "log.flush.interval.messages" -> "1",
+      "replica.socket.timeout.ms" -> "1500",
+      "controlled.shutdown.enable" -> "false",
+      "auto.leader.rebalance.enable" -> "false")
 
-  def this() =
-    this(ZookeeperConfiguration(), KafkaConfiguration())
+  def producerConfig(brokerConfig: Map[String,String], serializer: Class[_]): ProducerConfig = {
+    /*
+      "bootstrap.servers" -> brokerConfig("metadata.broker.list"),
+      //"client.id" -> "",
+      "key.serializer" -> kSerializer.getName,
+      "value.serializer" -> vSerializer.getName)*/
 
-  import scala.collection.JavaConverters._
-
-  val kafkaConfig: KafkaConfig = {
-    val props = new Properties()
-    props.putAll(kafkaConf.settings.asJava)
-    new KafkaConfig(props)
-  }
-
-  def producerConfig(brokerAddress: String, serializer: Class[_]): ProducerConfig = {
-    val c = Map(
-      "metadata.broker.list" -> brokerAddress,
+    val c = brokerConfig ++ Map(
+      "producer.type" -> "async",
       "request.required.acks" -> "-1",
       "serializer.class" -> serializer.getName)
+
 
     val props = new Properties()
     props.putAll(c.asJava)
     new ProducerConfig(props)
   }
 
-}
+  def consumerConfig(group: String,
+                     kafkaConnect: String,
+                     autoCommitEnabled: Boolean,
+                     kDeserializer: Class[_],
+                     vDeserializer: Class[_],
+                     zkConnect: String): Map[String,String] =
+    Map(
+      //consumer.timeout.ms
+      "zookeeper.connect" -> zkConnect,
+      "bootstrap.servers" -> kafkaConnect,
+      "group.id" -> group,
+      "enable.auto.commit" -> autoCommitEnabled.toString,
+      "auto.offset.reset" -> "largest",
+      "auto.commit.interval.ms" -> "1000",
+      "session.timeout.ms" -> "30000",
+      "key.deserializer" -> kDeserializer.getName,
+      "value.deserializer" -> vDeserializer.getName)
 
-/* TODO remove default args */
-object Embedded {
+  def kafkaParams(group: String,
+                  kafkaConnect: String,
+                  autoCommitEnabled: Boolean,
+                  kDeserializer: Class[_],
+                  vDeserializer: Class[_],
+                  zkConnect: String): Map[String, String] =
+    consumerConfig(
+      group, kafkaConnect, autoCommitEnabled, kDeserializer, vDeserializer, zkConnect)
 
-  final val DefaultZkPort: Int = 2181
-
-  final val DefaultKafkaPort: Int = 9092
-
-  final val DefaultHost: InetAddress = InetAddress.getLocalHost
-
-  final val DefaultHostString: String = "127.0.0.1" //DefaultHost.getHostAddress
-
-  final val DefaultZookeeperConnect: String = s"$DefaultHostString:$DefaultZkPort"
-
-  final val DefaultKafkaConnect: String = s"$DefaultHostString:$DefaultKafkaPort"
-
-  final val DefaultGroupId: String = s"consumer-${scala.util.Random.nextInt(10000)}"
-
-  sealed trait ServerConfig extends Serializable
-
-  final case class ZookeeperConfiguration(
-      connectTo: String,
-      tickTime: Int,
-      connectionTimeout: Int,
-      sessionTimeout: Int = 6000
-  ) extends ServerConfig {
-
-    /** Use at your own peril until validation added. */
-    def hostPortUnsafe: (String, Int) = {
-      val splits = connectTo.split(":")
-      (splits(0), splits(1).toInt)
-    }
-
-  }
-
-  object ZookeeperConfiguration {
-
-    def apply(): ZookeeperConfiguration =
-      ZookeeperConfiguration(DefaultZookeeperConnect, 3000, 60000, 6000)
-  }
-
-  final case class KafkaConfiguration(settings: Map[String, String]) extends ServerConfig {
-
-    def kafkaParams(groupId: Option[String]): Map[String, String] =
-      settings ++ Map(
-        "group.id" -> groupId.getOrElse(DefaultGroupId),
-        "auto.offset.reset" -> "largest")
-  }
-
-  object KafkaConfiguration extends EmbeddedIO {
-
-    def settings(kafkaConnect: String, zkConnect: String): Map[String,String] =
-      Map(
-        "broker.id" -> "0",
-       // "host.name" -> host, "port" -> port.toString,
-        "metadata.broker.list" -> "host",
-        //"advertised.host.name" -> host,
-        //"advertised.port" -> port.toString,
-        "log.dir" -> createTempDir("kafka-embedded-tmp").getAbsolutePath,
-        "zookeeper.connect" -> zkConnect,
-        "replica.high.watermark.checkpoint.interval.ms" -> "5000",
-        "log.flush.interval.messages" -> "1",
-        "replica.socket.timeout.ms" -> "1500",
-        "controlled.shutdown.enable" -> "false",
-        "auto.leader.rebalance.enable" -> "false")
-
-    def apply(kafkaConnect: Option[String] = None,
-              zkConnect: Option[String] = None): KafkaConfiguration = KafkaConfiguration(
-      settings(
-        kafkaConnect.getOrElse(DefaultKafkaConnect),
-        zkConnect.getOrElse(DefaultZookeeperConnect)))
-  }
 }

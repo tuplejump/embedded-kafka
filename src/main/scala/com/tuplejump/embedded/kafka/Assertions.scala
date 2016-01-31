@@ -19,16 +19,12 @@ package com.tuplejump.embedded.kafka
 import java.util.concurrent.TimeoutException
 
 import scala.annotation.tailrec
-import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
 /**
  * Simple helper assertions.
  */
 trait Assertions {
-
-  /** Obtain current time (`System.nanoTime`) as Duration. */
-  def now: FiniteDuration = System.nanoTime.nanos
 
   def eventually[T](timeout: Long, interval: Long)(func: => T): T = {
     def makeAttempt(): Either[Throwable, T] = {

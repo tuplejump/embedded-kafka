@@ -16,9 +16,10 @@
 
 package com.tuplejump.embedded.kafka
 
-import java.io.{ File => JFile }
+import java.util.Properties
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 
+import scala.collection.JavaConverters._
 import kafka.admin.AdminUtils
 import kafka.api.Request
 import kafka.serializer.StringEncoder
@@ -27,22 +28,26 @@ import kafka.server.{ KafkaConfig, KafkaServer }
 import kafka.utils.ZkUtils
 import org.I0Itec.zkclient.ZkClient
 
-final class EmbeddedKafka(val settings: Settings) extends EmbeddedIO with Assertions with Logging {
+final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
+  extends EmbeddedIO with Settings with Assertions with Logging {
 
-  def this() = this(new Settings)
-
-  import Embedded._
-  import settings._
+  def this() = this(DefaultKafkaConnect, DefaultZookeeperConnect)
 
   /** Should an error occur, make sure it shuts down. */
   Runtime.getRuntime.addShutdownHook(new Thread("Shutting down embedded kafka") {
     override def run() { shutdown() }
   })
 
-  val kafkaConfig: KafkaConfig = settings.kafkaConfig
+  val config = brokerConfig(kafkaConnect, zkConnect)
 
-  val producerConfig: ProducerConfig = settings.producerConfig(
-    DefaultKafkaConnect, classOf[StringEncoder]
+  val kafkaConfig: KafkaConfig = {
+    val props = new Properties()
+    props.putAll(config.asJava)
+    new KafkaConfig(props)
+  }
+
+  val producerConfig: ProducerConfig = super.producerConfig(
+    config, classOf[StringEncoder]//, classOf[StringEncoder]
   )
 
   private val _isRunning = new AtomicBoolean(false)
@@ -67,30 +72,31 @@ final class EmbeddedKafka(val settings: Settings) extends EmbeddedIO with Assert
   }
 
   def producer: Producer[String, String] = _producer.get.getOrElse {
-    if (!isRunning)
-      throw new IllegalStateException("Attempt to call producer before starting EmbeddedKafka instance. Call EmbeddedKafka.start() first.")
-    else {
-      val p = new Producer[String, String](producerConfig)
-      _producer.set(Some(p))
-      p
-    }
+    require(isRunning, "Attempt to call producer before starting EmbeddedKafka instance. Call EmbeddedKafka.start() first.")
+    val p = new Producer[String, String](producerConfig)
+    _producer.set(Some(p))
+    p
   }
 
   /** Starts the embedded Zookeeper server and Kafka brokers. */
   def start(): Unit = {
+    require(!isRunning, "EmbeddedKafka should not be running prior to calling 'start'.")
+    for (zk <- _zookeeper.get) {
+      require(!zk.isRunning, "Zookeeper should not be running prior to calling 'start'.")
+    }
 
-    val canStart = _isRunning.compareAndSet(false, true)
+    val zk = new EmbeddedZookeeper(connectTo = zkConnect, tickTime = 3000)
 
-    val zk = new EmbeddedZookeeper(zkConf)
     zk.start()
     eventually(5000, 500) {
-      assert(zk.isRunning, "Zookeeper must be started before proceeding with setup.")
+      require(zk.isRunning, "Zookeeper must be started before proceeding with setup.")
     }
     _zookeeper.set(Some(zk))
 
     logger.info("Starting ZkClient")
+
     _zkClient.set(Some(new ZkClient(
-      zkConf.connectTo, zkConf.sessionTimeout, zkConf.connectionTimeout, DefaultStringSerializer
+      zk.connectTo, 6000, 60000, DefaultStringSerializer
     )))
 
     logger.info("Starting KafkaServer")
@@ -136,17 +142,17 @@ final class EmbeddedKafka(val settings: Settings) extends EmbeddedIO with Assert
 
   /** Shuts down the embedded servers.*/
   def shutdown(): Unit = try {
-    val canStop = _isRunning.compareAndSet(true, false)
-
     logger.info(s"Shutting down Kafka server.")
 
     for (v <- _producer.get) v.close()
     for (v <- _server.get) {
       //https://issues.apache.org/jira/browse/KAFKA-1887 ?
       v.kafkaController.shutdown()
+      v.getLogManager.cleanupLogs()
       v.shutdown()
       v.awaitShutdown()
-      v.config.logDirs.foreach { f => deleteRecursively(new JFile(f)) }
+      //v.config.logDirs.foreach { f => deleteRecursively(new JFile(f)) }
+
     }
 
     for (v <- _zkClient.get) v.close()

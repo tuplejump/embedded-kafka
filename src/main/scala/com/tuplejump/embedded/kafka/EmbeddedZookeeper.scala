@@ -23,7 +23,6 @@ import scala.util.Try
 import org.I0Itec.zkclient.exception.ZkMarshallingError
 import org.I0Itec.zkclient.serialize.ZkSerializer
 import org.apache.zookeeper.server.{ NIOServerCnxnFactory, ZooKeeperServer }
-import Embedded.ZookeeperConfiguration
 
 /**
  * Implements a simple standalone ZooKeeperServer.
@@ -45,14 +44,9 @@ import Embedded.ZookeeperConfiguration
  * connection is established. The client will continue attempts until the
  * session is explicitly closed.
  */
-class EmbeddedZookeeper(config: ZookeeperConfiguration) extends EmbeddedIO with Assertions with Logging {
-
-  def this() = this(ZookeeperConfiguration())
+class EmbeddedZookeeper(val connectTo: String, val tickTime: Int) extends EmbeddedIO with Assertions with Logging {
 
   /** Should an error occur, make sure it shuts down. */
-  Runtime.getRuntime.addShutdownHook(new Thread("Shutting down embedded zookeeper") {
-    override def run() { shutdown() }
-  })
 
   val snapshotDir = createTempDir("zk-test-snapshots")
 
@@ -75,10 +69,13 @@ class EmbeddedZookeeper(config: ZookeeperConfiguration) extends EmbeddedIO with 
   }
 
   def start(): Unit = {
-    val server = new ZooKeeperServer(snapshotDir, logDir, config.tickTime)
+    val server = new ZooKeeperServer(snapshotDir, logDir, tickTime)
     _zookeeper.set(Some(server))
 
-    val (ip, port) = config.hostPortUnsafe
+    val (ip, port) = {
+      val splits = connectTo.split(":")
+      (splits(0), splits(1).toInt)
+    }
 
     val f = new NIOServerCnxnFactory()
     f.configure(new InetSocketAddress(ip, port), 16)

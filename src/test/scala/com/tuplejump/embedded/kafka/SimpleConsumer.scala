@@ -30,13 +30,12 @@ import scala.util.Try
  * TODO update to new consumer.
  */
 class SimpleConsumer(
-    zookeeper: String,
+    consumerConfig: Map[String, String],
     topic: String,
     groupId: String,
     partitions: Int,
     numThreads: Int,
-    count: AtomicInteger
-) {
+    count: AtomicInteger) {
 
   val connector = Consumer.create(createConsumerConfig)
 
@@ -59,14 +58,9 @@ class SimpleConsumer(
   }
 
   private def createConsumerConfig: ConsumerConfig = {
+    import scala.collection.JavaConverters._
     val props = new Properties()
-    props.put("consumer.timeout.ms", "2000")
-    props.put("zookeeper.connect", zookeeper)
-    props.put("group.id", groupId)
-    props.put("zookeeper.session.timeout.ms", "400")
-    props.put("zookeeper.sync.time.ms", "10")
-    props.put("auto.commit.interval.ms", "1000")
-
+    props.putAll(consumerConfig.asJava)
     new ConsumerConfig(props)
   }
 

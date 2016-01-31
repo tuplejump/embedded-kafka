@@ -18,4 +18,17 @@ package com.tuplejump.embedded
 
 package object kafka {
 
+
+  final val DefaultZkPort: Int = 2181
+
+  final val DefaultKafkaPort: Int = 9092
+
+  final val DefaultHostString: String = "127.0.0.1" //DefaultHost.getHostAddress
+
+  final val DefaultZookeeperConnect: String = s"$DefaultHostString:$DefaultZkPort"
+
+  final val DefaultKafkaConnect: String = s"$DefaultHostString:$DefaultKafkaPort"
+
+  final val DefaultGroupId: String = s"consumer-${scala.util.Random.nextInt(10000)}"
+
 }

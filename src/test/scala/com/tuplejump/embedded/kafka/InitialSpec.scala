@@ -18,6 +18,7 @@ package com.tuplejump.embedded.kafka
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import org.apache.kafka.common.serialization.StringDeserializer
 import org.scalatest.concurrent.Eventually
 
 class InitialSpec extends AbstractSpec with Eventually with Assertions with Logging {
@@ -29,6 +30,7 @@ class InitialSpec extends AbstractSpec with Eventually with Assertions with Logg
     val batch1 = for (n <- 0 until 1000) yield s"message-test-$n"
 
     "start embedded zookeeper and embedded kafka" in {
+      kafka.isRunning should be (false)
       kafka.start()
       eventually(10000, 100)(assert(kafka.isRunning, "Kafka must be running."))
     }
@@ -36,9 +38,16 @@ class InitialSpec extends AbstractSpec with Eventually with Assertions with Logg
       kafka.createTopic(topic, 1, 1)
     }
     "publish messages to the embedded kafka instance" in {
-      val consumer = new SimpleConsumer(kafka.kafkaConfig.zkConnect, topic, "some.group", 1, 1, atomic)
+      val config = kafka.consumerConfig(
+        group = "some.group",
+        kafkaConnect = DefaultKafkaConnect,
+        autoCommitEnabled = true,
+        kDeserializer = classOf[StringDeserializer],
+        vDeserializer = classOf[StringDeserializer],
+        zkConnect = DefaultZookeeperConnect)
+      val consumer = new SimpleConsumer(config, topic, "some.group", 1, 1, atomic)
 
-      kafka.sendMessages("test", batch1)
+      kafka.sendMessages(topic, batch1)
       logger.info(s"Publishing ${batch1.size} messages...")
       eventually(10000, 10000)(assert(atomic.get >= batch1.size, "Consumer must have all messages."))
       consumer.shutdown()
