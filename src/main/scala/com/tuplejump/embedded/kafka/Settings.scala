@@ -59,19 +59,21 @@ trait Settings extends EmbeddedIO {
     new ProducerConfig(props)
   }
 
+  /** offsetPolicy = new consumer: latest,earliest,none */
   def consumerConfig(group: String,
                      kafkaConnect: String,
+                     zkConnect: String,
+                     offsetPolicy: String,
                      autoCommitEnabled: Boolean,
                      kDeserializer: Class[_],
-                     vDeserializer: Class[_],
-                     zkConnect: String): Map[String,String] =
+                     vDeserializer: Class[_]): Map[String,String] =
     Map(
       //consumer.timeout.ms
       "zookeeper.connect" -> zkConnect,
       "bootstrap.servers" -> kafkaConnect,
       "group.id" -> group,
+      "auto.offset.reset" -> offsetPolicy,
       "enable.auto.commit" -> autoCommitEnabled.toString,
-      "auto.offset.reset" -> "largest",
       "auto.commit.interval.ms" -> "1000",
       "session.timeout.ms" -> "30000",
       "key.deserializer" -> kDeserializer.getName,
@@ -79,11 +81,12 @@ trait Settings extends EmbeddedIO {
 
   def kafkaParams(group: String,
                   kafkaConnect: String,
+                  zkConnect: String,
+                  offsetPolicy: String,
                   autoCommitEnabled: Boolean,
                   kDeserializer: Class[_],
-                  vDeserializer: Class[_],
-                  zkConnect: String): Map[String, String] =
+                  vDeserializer: Class[_]): Map[String, String] =
     consumerConfig(
-      group, kafkaConnect, autoCommitEnabled, kDeserializer, vDeserializer, zkConnect)
+      group, kafkaConnect, zkConnect, offsetPolicy, autoCommitEnabled, kDeserializer, vDeserializer)
 
 }

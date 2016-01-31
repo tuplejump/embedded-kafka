@@ -41,10 +41,11 @@ class InitialSpec extends AbstractSpec with Eventually with Assertions with Logg
       val config = kafka.consumerConfig(
         group = "some.group",
         kafkaConnect = DefaultKafkaConnect,
+        zkConnect = DefaultZookeeperConnect,
+        offsetPolicy = "largest",//different with new consumer.
         autoCommitEnabled = true,
         kDeserializer = classOf[StringDeserializer],
-        vDeserializer = classOf[StringDeserializer],
-        zkConnect = DefaultZookeeperConnect)
+        vDeserializer = classOf[StringDeserializer])
       val consumer = new SimpleConsumer(config, topic, "some.group", 1, 1, atomic)
 
       kafka.sendMessages(topic, batch1)
