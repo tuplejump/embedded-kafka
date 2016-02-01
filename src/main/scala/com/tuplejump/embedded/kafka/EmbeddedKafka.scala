@@ -47,7 +47,7 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
   }
 
   val producerConfig: ProducerConfig = super.producerConfig(
-    config, classOf[StringEncoder]//, classOf[StringEncoder]
+    config, classOf[StringEncoder], classOf[StringEncoder]
   )
 
   private val _isRunning = new AtomicBoolean(false)
@@ -80,27 +80,23 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
 
   /** Starts the embedded Zookeeper server and Kafka brokers. */
   def start(): Unit = {
-    require(!isRunning, "EmbeddedKafka should not be running prior to calling 'start'.")
-    for (zk <- _zookeeper.get) {
-      require(!zk.isRunning, "Zookeeper should not be running prior to calling 'start'.")
-    }
 
-    val zk = new EmbeddedZookeeper(connectTo = zkConnect, tickTime = 3000)
+    require(_zookeeper.get.forall(!_.isRunning), "Zookeeper should not be running prior to calling 'start'.")
+    require(_server.get.isEmpty, "KafkaServer should not be running prior to calling 'start'.")
 
+    val zk = new EmbeddedZookeeper(connectTo = zkConnect, tickTime = 6000)
     zk.start()
     eventually(5000, 500) {
       require(zk.isRunning, "Zookeeper must be started before proceeding with setup.")
+      _zookeeper.set(Some(zk))
     }
-    _zookeeper.set(Some(zk))
 
     logger.info("Starting ZkClient")
+    _zkClient.set(Some(new ZkClient(zkConnect, 6000, 60000, DefaultStringSerializer)))
 
-    _zkClient.set(Some(new ZkClient(
-      zk.connectTo, 6000, 60000, DefaultStringSerializer
-    )))
 
     logger.info("Starting KafkaServer")
-    _server.set(Some(new KafkaServer(config = kafkaConfig, threadNamePrefix = Some("EmbeddedKafka"))))
+    _server.set(Some(new KafkaServer(kafkaConfig)))
     server.startup()
 
     _isRunning.set(true) // TODO add a test

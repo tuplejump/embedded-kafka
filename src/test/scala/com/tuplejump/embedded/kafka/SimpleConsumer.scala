@@ -30,12 +30,12 @@ import scala.util.Try
  * TODO update to new consumer.
  */
 class SimpleConsumer(
+    val count: AtomicInteger,
     consumerConfig: Map[String, String],
     topic: String,
     groupId: String,
     partitions: Int,
-    numThreads: Int,
-    count: AtomicInteger) {
+    numThreads: Int) {
 
   val connector = Consumer.create(createConsumerConfig)
 

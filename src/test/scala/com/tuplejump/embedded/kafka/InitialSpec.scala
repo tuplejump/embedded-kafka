@@ -39,6 +39,7 @@ class InitialSpec extends AbstractSpec with Eventually with Assertions with Logg
     }
     "publish messages to the embedded kafka instance" in {
       val config = kafka.consumerConfig(
+        isNewConsumer = false,
         group = "some.group",
         kafkaConnect = DefaultKafkaConnect,
         zkConnect = DefaultZookeeperConnect,
@@ -46,11 +47,13 @@ class InitialSpec extends AbstractSpec with Eventually with Assertions with Logg
         autoCommitEnabled = true,
         kDeserializer = classOf[StringDeserializer],
         vDeserializer = classOf[StringDeserializer])
-      val consumer = new SimpleConsumer(config, topic, "some.group", 1, 1, atomic)
+      val consumer = new SimpleConsumer(atomic, config, topic, "consumer.group", 1, 1)
 
       kafka.sendMessages(topic, batch1)
       logger.info(s"Publishing ${batch1.size} messages...")
-      eventually(10000, 10000)(assert(atomic.get >= batch1.size, "Consumer must have all messages."))
+
+      eventually(10000, 10000)(assert(consumer.count.get >= batch1.size, "Consumer must have all messages."))
+
       consumer.shutdown()
     }
     "shut down relatively cleanly for now" in {

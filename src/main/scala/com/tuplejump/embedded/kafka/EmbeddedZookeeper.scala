@@ -68,6 +68,7 @@ class EmbeddedZookeeper(val connectTo: String, val tickTime: Int) extends Embedd
     _zookeeper.get.getOrElse(throw new IllegalStateException("Kafka server not initialized."))
   }
 
+  /** Starts only one. */
   def start(): Unit = {
     val server = new ZooKeeperServer(snapshotDir, logDir, tickTime)
     _zookeeper.set(Some(server))

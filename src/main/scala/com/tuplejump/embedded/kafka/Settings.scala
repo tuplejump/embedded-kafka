@@ -28,31 +28,65 @@ trait Settings extends EmbeddedIO {
 
   def brokerConfig(kafkaConnect: String, zkConnect: String): Map[String,String] =
     Map(
-      // "broker.id" -> brokerId.toString,
+      //"broker.id" -> "0",
       "metadata.broker.list" -> kafkaConnect,
-      "log.cleanup.policy" -> "delete",
-      "log.dirs" -> createTempDir("kafka-embedded-tmp").getAbsolutePath,
+      "log.dir" -> createTempDir("kafka-embedded-tmp").getAbsolutePath,
       "zookeeper.connect" -> zkConnect,
-      //"zookeeper.connection.timeout.ms" -> "1000",//	The max time that the client waits to establish a connection to zookeeper. If not set, the value in zookeeper.session.timeout.ms is used	int	null		high
-      //"zookeeper.session.timeout.ms" -> "1000",
       "replica.high.watermark.checkpoint.interval.ms" -> "5000",
       "log.flush.interval.messages" -> "1",
       "replica.socket.timeout.ms" -> "1500",
-      "controlled.shutdown.enable" -> "false",
-      "auto.leader.rebalance.enable" -> "false")
+      "controlled.shutdown.enable" -> "true"
+      /*
+    // Replication configurations
+"num.replica.fetchers" -> "4",
+"replica.fetch.max.bytes=1048576
+"replica.fetch.wait.max.ms=500
+"replica.high.watermark.checkpoint.interval.ms=5000
+"replica.socket.timeout.ms=30000
+"replica.socket.receive.buffer.bytes=65536
+"replica.lag.time.max.ms=10000
 
-  def producerConfig(brokerConfig: Map[String,String], serializer: Class[_]): ProducerConfig = {
-    /*
+"controller.socket.timeout.ms=30000
+"controller.message.queue.size=10
+
+// Log configuration
+"num.partitions" -> "8",
+"message.max.bytes" -> "1000000",
+"auto.create.topics.enable" -> "true",
+"log.index.interval.bytes" -> "4096",
+"log.index.size.max.bytes" -> "10485760",
+"log.retention.hours" -> "168",
+"log.flush.interval.ms" -> "10000",
+"log.flush.interval.messages" -> "20000",
+"log.flush.scheduler.interval.ms" -> "2000",
+"log.roll.hours" -> "168",
+"log.retention.check.interval.ms" -> "300000",
+"log.segment.bytes" -> "1073741824",
+
+// ZK configuration
+"zookeeper.connection.timeout.ms" -> "6000",
+"zookeeper.sync.time.ms" -> "2000",
+
+// Socket server configuration
+"num.io.threads" -> "8",
+"num.network.threads" -> "8",
+"socket.request.max.bytes" -> "104857600",
+"socket.receive.buffer.bytes" -> "1048576",
+"socket.send.buffer.bytes" -> "1048576",
+"queued.max.requests" -> "16",
+"fetch.purgatory.purge.interval.requests" -> "100",
+"producer.purgatory.purge.interval.requests" -> "100"
+*/)
+
+  def producerConfig(brokerConfig: Map[String,String], kSerializer: Class[_], vSerializer: Class[_]): ProducerConfig = {
+    val c = brokerConfig ++ Map(
+      "request.required.acks" -> "-1",
+      "serializer.class" -> kSerializer.getName,
       "bootstrap.servers" -> brokerConfig("metadata.broker.list"),
       //"client.id" -> "",
       "key.serializer" -> kSerializer.getName,
-      "value.serializer" -> vSerializer.getName)*/
-
-    val c = brokerConfig ++ Map(
-      "producer.type" -> "async",
-      "request.required.acks" -> "-1",
-      "serializer.class" -> serializer.getName)
-
+      "value.serializer" -> vSerializer.getName
+    )
 
     val props = new Properties()
     props.putAll(c.asJava)
@@ -60,24 +94,29 @@ trait Settings extends EmbeddedIO {
   }
 
   /** offsetPolicy = new consumer: latest,earliest,none */
-  def consumerConfig(group: String,
+  def consumerConfig(isNewConsumer: Boolean,
+                     group: String,
                      kafkaConnect: String,
                      zkConnect: String,
                      offsetPolicy: String,
                      autoCommitEnabled: Boolean,
                      kDeserializer: Class[_],
                      vDeserializer: Class[_]): Map[String,String] =
-    Map(
+    newConsumerConfig(isNewConsumer, zkConnect) ++ Map(
       //consumer.timeout.ms
-      "zookeeper.connect" -> zkConnect,
       "bootstrap.servers" -> kafkaConnect,
       "group.id" -> group,
-      "auto.offset.reset" -> offsetPolicy,
-      "enable.auto.commit" -> autoCommitEnabled.toString,
-      "auto.commit.interval.ms" -> "1000",
-      "session.timeout.ms" -> "30000",
+      //"auto.offset.reset" -> offsetPolicy,
+      //"enable.auto.commit" -> autoCommitEnabled.toString,
+      //"auto.commit.interval.ms" -> "1000",
+      //"session.timeout.ms" -> "30000",
       "key.deserializer" -> kDeserializer.getName,
       "value.deserializer" -> vDeserializer.getName)
+
+  //TODO more
+  private def newConsumerConfig(isNewConsumer: Boolean, zkConnect: String): Map[String,String] = {
+    if(isNewConsumer) Map.empty else Map("zookeeper.connect" -> zkConnect)
+  }
 
   def kafkaParams(group: String,
                   kafkaConnect: String,
@@ -87,6 +126,7 @@ trait Settings extends EmbeddedIO {
                   kDeserializer: Class[_],
                   vDeserializer: Class[_]): Map[String, String] =
     consumerConfig(
+      isNewConsumer = false,
       group, kafkaConnect, zkConnect, offsetPolicy, autoCommitEnabled, kDeserializer, vDeserializer)
 
 }
