@@ -26,16 +26,21 @@ import kafka.producer.ProducerConfig
  */
 trait Settings extends EmbeddedIO {
 
-  def brokerConfig(kafkaConnect: String, zkConnect: String): Map[String,String] =
+  def brokerConfig(kafkaConnect: String, zkConnect: String): Map[String,String] = {
+    val logDir = createTempDir("kafka-embedded-tmp").getAbsolutePath
     Map(
       //"broker.id" -> "0",
+      "host.name" -> kafkaConnect.split(":")(0),
       "metadata.broker.list" -> kafkaConnect,
-      "log.dir" -> createTempDir("kafka-embedded-tmp").getAbsolutePath,
+      "log.dir" -> logDir,
+      "log.dirs" -> logDir,
       "zookeeper.connect" -> zkConnect,
       "replica.high.watermark.checkpoint.interval.ms" -> "5000",
       "log.flush.interval.messages" -> "1",
       "replica.socket.timeout.ms" -> "1500",
       "controlled.shutdown.enable" -> "true"
+    )
+  }
       /*
     // Replication configurations
 "num.replica.fetchers" -> "4",
@@ -76,7 +81,7 @@ trait Settings extends EmbeddedIO {
 "queued.max.requests" -> "16",
 "fetch.purgatory.purge.interval.requests" -> "100",
 "producer.purgatory.purge.interval.requests" -> "100"
-*/)
+*/
 
   def producerConfig(brokerConfig: Map[String,String], kSerializer: Class[_], vSerializer: Class[_]): ProducerConfig = {
     val c = brokerConfig ++ Map(
@@ -106,8 +111,8 @@ trait Settings extends EmbeddedIO {
       //consumer.timeout.ms
       "bootstrap.servers" -> kafkaConnect,
       "group.id" -> group,
-      //"auto.offset.reset" -> offsetPolicy,
-      //"enable.auto.commit" -> autoCommitEnabled.toString,
+      "auto.offset.reset" -> offsetPolicy,
+      "enable.auto.commit" -> autoCommitEnabled.toString,
       //"auto.commit.interval.ms" -> "1000",
       //"session.timeout.ms" -> "30000",
       "key.deserializer" -> kDeserializer.getName,

@@ -16,6 +16,7 @@
 
 package com.tuplejump.embedded.kafka
 
+import java.io.File
 import java.util.Properties
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 
@@ -147,8 +148,6 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
       v.getLogManager.cleanupLogs()
       v.shutdown()
       v.awaitShutdown()
-      //v.config.logDirs.foreach { f => deleteRecursively(new JFile(f)) }
-
     }
 
     for (v <- _zkClient.get) v.close()

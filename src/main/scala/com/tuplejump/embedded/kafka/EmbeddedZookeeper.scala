@@ -99,6 +99,11 @@ class EmbeddedZookeeper(val connectTo: String, val tickTime: Int) extends Embedd
       logger.info(s"ZooKeeper server shut down.")
     }
     _zookeeper.set(None)
+
+    Try {
+      deleteRecursively(snapshotDir)
+      deleteRecursively(logDir)
+    }
   }
 }
 
