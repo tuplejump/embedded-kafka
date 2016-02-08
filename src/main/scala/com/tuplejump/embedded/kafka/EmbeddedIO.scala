@@ -20,6 +20,8 @@ import java.io.{ File => JFile, IOException }
 import java.nio.file.{ Paths, Path }
 import java.util.UUID
 
+import scala.util.Try
+
 trait EmbeddedIO {
 
   private val shutdownDeletePaths = new scala.collection.mutable.HashSet[String]()
@@ -60,7 +62,7 @@ trait EmbeddedIO {
   protected def deleteRecursively(file: JFile): Unit =
     for (file <- Option(file)) {
       if (file.isDirectory && !isSymlink(file)) {
-        for (child <- file.listFiles) deleteRecursively(child)
+        for (child <- file.listFiles) Try(deleteRecursively(child))
       }
       if (!file.delete && file.exists) {
         throw new IOException("Failed to delete: " + file.getAbsolutePath)

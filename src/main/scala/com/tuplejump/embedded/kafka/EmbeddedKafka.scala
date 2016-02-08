@@ -16,15 +16,14 @@
 
 package com.tuplejump.embedded.kafka
 
-import java.io.File
 import java.util.Properties
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 
 import scala.collection.JavaConverters._
 import kafka.admin.AdminUtils
 import kafka.api.Request
-import kafka.serializer.StringEncoder
-import kafka.producer.{ ProducerConfig, KeyedMessage, Producer }
+import org.apache.kafka.common.serialization.StringSerializer
+import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
 import kafka.server.{ KafkaConfig, KafkaServer }
 import kafka.utils.ZkUtils
 import org.I0Itec.zkclient.ZkClient
@@ -47,8 +46,8 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
     new KafkaConfig(props)
   }
 
-  val producerConfig: ProducerConfig = super.producerConfig(
-    config, classOf[StringEncoder], classOf[StringEncoder]
+  val producerConfig: Properties = super.producerConfig(
+    config, classOf[StringSerializer], classOf[StringSerializer]
   )
 
   private val _isRunning = new AtomicBoolean(false)
@@ -59,7 +58,7 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
 
   private val _server = new AtomicReference[Option[KafkaServer]](None)
 
-  private val _producer = new AtomicReference[Option[Producer[String, String]]](None)
+  private val _producer = new AtomicReference[Option[KafkaProducer[String, String]]](None)
 
   def server: KafkaServer = _server.get.getOrElse {
     logger.info("Attempt to call server before starting EmbeddedKafka instance. Starting automatically...")
@@ -72,9 +71,11 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
     _zookeeper.get.exists(_.isRunning) && _server.get.isDefined && _isRunning.get() // a better way?
   }
 
-  def producer: Producer[String, String] = _producer.get.getOrElse {
+  def producer: KafkaProducer[String, String] = _producer.get.getOrElse {
     require(isRunning, "Attempt to call producer before starting EmbeddedKafka instance. Call EmbeddedKafka.start() first.")
-    val p = new Producer[String, String](producerConfig)
+    val p = try new KafkaProducer[String, String](producerConfig) catch {
+      case e: Throwable => println(e); throw e
+    }
     _producer.set(Some(p))
     p
   }
@@ -116,8 +117,15 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
   }
 
   /** Send the array of messages to the Kafka broker */
-  def sendMessages(topic: String, messages: Iterable[String]): Unit = {
-    producer.send(messages.toArray.map { new KeyedMessage[String, String](topic, _) }: _*)
+  def sendMessages(topic: String, messages: Iterable[String]): Unit =
+    for {
+      message <- messages
+    } producer.send(new ProducerRecord[String, String](topic, message))
+
+  /* TODO with a key and as [K,V] and Array[Byte]*/
+  private val toRecord = (topic: String, group: Option[String], message: String) => group match {
+    case Some(k) => new ProducerRecord[String, String](topic, k, message)
+    case _       => new ProducerRecord[String, String](topic, message)
   }
 
   private def awaitPropagation(topic: String, partition: Int): Unit = {

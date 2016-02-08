@@ -4,7 +4,7 @@ import sbt.Keys._
 import sbt._
 import de.heikoseeberger.sbtheader.AutomateHeaderPlugin
 
-object Blender extends sbt.Build {
+object Build extends sbt.Build {
 
   lazy val root = project.in(file("."))
     .settings(Settings.common ++ Seq(libraryDependencies ++= Seq(
