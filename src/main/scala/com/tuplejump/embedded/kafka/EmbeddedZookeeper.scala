@@ -16,6 +16,7 @@
 
 package com.tuplejump.embedded.kafka
 
+import java.io.{File => JFile}
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 
@@ -44,13 +45,10 @@ import org.apache.zookeeper.server.{ NIOServerCnxnFactory, ZooKeeperServer }
  * connection is established. The client will continue attempts until the
  * session is explicitly closed.
  */
-class EmbeddedZookeeper(val connectTo: String, val tickTime: Int) extends EmbeddedIO with Assertions with Logging {
-
-  /** Should an error occur, make sure it shuts down. */
-
-  val snapshotDir = createTempDir("zk-test-snapshots")
-
-  val logDir = createTempDir("zk-test-logs")
+class EmbeddedZookeeper(val connectTo: String,
+                        val tickTime: Int,
+                        snapDir: JFile,
+                        dataDir: JFile) extends Assertions with Logging {
 
   logger.info("Starting Zookeeper")
 
@@ -70,7 +68,7 @@ class EmbeddedZookeeper(val connectTo: String, val tickTime: Int) extends Embedd
 
   /** Starts only one. */
   def start(): Unit = {
-    val server = new ZooKeeperServer(snapshotDir, logDir, tickTime)
+    val server = new ZooKeeperServer(snapDir, dataDir, tickTime)
     _zookeeper.set(Some(server))
 
     val (ip, port) = {
@@ -99,11 +97,6 @@ class EmbeddedZookeeper(val connectTo: String, val tickTime: Int) extends Embedd
       logger.info(s"ZooKeeper server shut down.")
     }
     _zookeeper.set(None)
-
-    Try {
-      deleteRecursively(snapshotDir)
-      deleteRecursively(logDir)
-    }
   }
 }
 

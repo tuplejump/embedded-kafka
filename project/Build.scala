@@ -11,8 +11,9 @@ object Build extends sbt.Build {
       Library.akkaActor,
       Library.kafka,
       Library.logback,
-      Library.scalaCheck % "test",
-      Library.scalaTest  % "test",
+      Library.commonsIo,
+      Library.Test.scalaCheck % "test",
+      Library.Test.scalaTest  % "test",
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, minor)) if minor < 11 => Library.Cross.slf4j
         case _                              => Library.Cross.scalaLogging
@@ -23,16 +24,15 @@ object Build extends sbt.Build {
 }
 
 object Settings extends sbt.Build {
-
-  import com.typesafe.sbt.GitPlugin
   import de.heikoseeberger.sbtheader.HeaderPlugin
   import de.heikoseeberger.sbtheader.license.Apache2_0
-  import com.scalapenos.sbt.prompt.SbtPrompt.autoImport.{promptTheme, ScalapenosTheme}
   import wartremover.WartRemover.autoImport._
   import com.typesafe.tools.mima.plugin.MimaKeys._
   import com.typesafe.tools.mima.plugin.MimaPlugin._
   import org.scalastyle.sbt.ScalastylePlugin._
   import scoverage.ScoverageKeys
+  //import com.typesafe.sbt.GitPlugin
+  //import com.scalapenos.sbt.prompt.SbtPrompt.autoImport.{promptTheme, ScalapenosTheme}
 
   val versionStatus = settingKey[Unit]("The Scala version used in cross-build reapply for '+ package', '+ publish'.")
 
@@ -62,8 +62,6 @@ object Settings extends sbt.Build {
 
     versionStatus := Version.cross(scalaVersion.value),
 
-    GitPlugin.autoImport.git.useGitDescribe := true,
-
     HeaderPlugin.autoImport.headers := Map(
       "scala" -> Apache2_0("2016", "Tuplejump"),
       "conf"  -> Apache2_0("2016", "Tuplejump", "#")
@@ -78,7 +76,8 @@ object Settings extends sbt.Build {
 
     crossPaths in ThisBuild := true,
 
-    promptTheme := ScalapenosTheme,
+    //GitPlugin.autoImport.git.useGitDescribe := true,
+    //promptTheme := ScalapenosTheme,
 
     logBuffered in Compile := false,
     logBuffered in Test := false,

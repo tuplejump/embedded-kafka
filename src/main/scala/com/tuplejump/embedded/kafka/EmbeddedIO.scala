@@ -16,27 +16,31 @@
 
 package com.tuplejump.embedded.kafka
 
-import java.io.{ File => JFile, IOException }
-import java.nio.file.{ Paths, Path }
-import java.util.UUID
+import java.io.{ File => JFile }
 
-import scala.util.Try
+import org.apache.commons.io.FileUtils
 
-trait EmbeddedIO {
+object EmbeddedIO extends Logging {
 
   private val shutdownDeletePaths = new scala.collection.mutable.HashSet[String]()
 
+  val logsDir = new JFile(".", "logs")
+  dirSetup(new JFile(logsDir.getAbsolutePath))
+
   /** Creates tmp dirs that automatically get deleted on shutdown. */
-  def createTempDir(tmpName: String = UUID.randomUUID.toString): JFile = {
-    val tmp = Paths.get(sys.props("java.io.tmpdir"))
-    //tmp.getFileSystem.getPath(tmpName).toAbsolutePath
-    val name: Path = tmp.getFileSystem.getPath(tmpName)
-    if (Option(name.getParent).isDefined) throw new IllegalArgumentException("Invalid prefix or suffix")
-    val dir = new JFile(tmp.resolve(name).toString)
+  def createTempDir(tmpName: String): JFile =
+    dirSetup(new JFile(logsDir, tmpName))
+
+  private def dirSetup(dir: JFile): JFile = {
+    if (logsDir.exists()) deleteRecursively(logsDir)
+    dir.mkdir
+
+    logger.info(s"Created dir ${dir.getAbsolutePath}")
+
     registerShutdownDeleteDir(dir)
 
-    sys.runtime.addShutdownHook(new Thread("delete embedded server temp dir " + dir) {
-      override def run() {
+    sys.runtime.addShutdownHook(new Thread("delete temp dir " + dir) {
+      override def run(): Unit = {
         if (!hasRootAsShutdownDeleteDir(dir)) deleteRecursively(dir)
       }
     })
@@ -58,23 +62,8 @@ trait EmbeddedIO {
     }
   }
 
-  /** For now: raises an error if deletion failed. TODO validation type. */
-  protected def deleteRecursively(file: JFile): Unit =
-    for (file <- Option(file)) {
-      if (file.isDirectory && !isSymlink(file)) {
-        for (child <- file.listFiles) Try(deleteRecursively(child))
-      }
-      if (!file.delete && file.exists) {
-        throw new IOException("Failed to delete: " + file.getAbsolutePath)
-      }
-    }
-
-  private def isSymlink(file: JFile): Boolean = {
-    if (Option(file).isEmpty || scala.util.Properties.isWin) false
-    else {
-      val fcd = if (Option(file.getParent).isEmpty) file
-      else new JFile(file.getParentFile.getCanonicalFile, file.getName)
-      if (fcd.getCanonicalFile.equals(fcd.getAbsoluteFile)) false else true
-    }
-  }
+  protected def deleteRecursively(delete: JFile): Unit =
+    for {
+      file <- Option(delete)
+    } FileUtils.deleteDirectory(file)
 }

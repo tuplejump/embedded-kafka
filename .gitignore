@@ -28,4 +28,5 @@ project/project
 .DS_Store
 
 # Log files
+/logs
 *.log

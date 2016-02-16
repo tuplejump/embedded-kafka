@@ -44,8 +44,8 @@ class InitialSpec extends AbstractSpec with Eventually with Logging {
     "publish messages to the embedded kafka instance" in {
       val config = kafka.consumerConfig(
         group = "some.group",
-        kafkaConnect = DefaultKafkaConnect,
-        zkConnect = DefaultZookeeperConnect,
+        kafkaConnect = kafka.kafkaConfig.hostName + ":" + kafka.kafkaConfig.port,
+        zkConnect = kafka.kafkaConfig.zkConnect,
         offsetPolicy = "largest",//different with new consumer.
         autoCommitEnabled = true,
         kDeserializer = classOf[StringDeserializer],

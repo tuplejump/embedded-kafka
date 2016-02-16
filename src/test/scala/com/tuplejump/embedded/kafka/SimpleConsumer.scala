@@ -20,10 +20,9 @@ import java.util.Properties
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.util.Try
 import kafka.serializer.StringDecoder
 import kafka.consumer.{ Consumer, ConsumerConfig }
-
-import scala.util.Try
 
 /**
  * Very simple consumer of a single Kafka topic.

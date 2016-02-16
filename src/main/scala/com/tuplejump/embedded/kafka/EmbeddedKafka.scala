@@ -16,20 +16,17 @@
 
 package com.tuplejump.embedded.kafka
 
-import java.util.Properties
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 
-import scala.collection.JavaConverters._
-import kafka.admin.AdminUtils
-import kafka.api.Request
 import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
+import kafka.admin.AdminUtils
+import kafka.producer.ProducerConfig
 import kafka.server.{ KafkaConfig, KafkaServer }
-import kafka.utils.ZkUtils
 import org.I0Itec.zkclient.ZkClient
 
 final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
-  extends EmbeddedIO with Settings with Assertions with Logging {
+  extends Settings with Assertions with Logging {
 
   def this() = this(DefaultKafkaConnect, DefaultZookeeperConnect)
 
@@ -38,17 +35,18 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
     override def run(): Unit = shutdown()
   })
 
-  val config = brokerConfig(kafkaConnect, zkConnect)
+  val logDir = EmbeddedIO.logsDir
+  val snapDir = EmbeddedIO.createTempDir("zk-snapshots")
+  val dataDir = EmbeddedIO.createTempDir("zk-data")
 
-  val kafkaConfig: KafkaConfig = {
-    val props = new Properties()
-    props.putAll(config.asJava)
-    new KafkaConfig(props)
-  }
+  val config = brokerConfig(kafkaConnect, zkConnect, dataDir.getAbsolutePath)
 
-  val producerConfig: Map[String,String] = super.producerConfig(
-    config, classOf[StringSerializer], classOf[StringSerializer]
-  )
+  val kafkaConfig: KafkaConfig = new KafkaConfig(mapToProps(config))
+
+  /** hard-coded for Strings only so far. Roadmap: making configurable. */
+  val producerConfig: ProducerConfig = new ProducerConfig(mapToProps(
+    super.producerConfig(kafkaConnect, classOf[StringSerializer], classOf[StringSerializer])
+  ))
 
   private val _isRunning = new AtomicBoolean(false)
 
@@ -73,8 +71,8 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
 
   def producer: KafkaProducer[String, String] = _producer.get.getOrElse {
     require(isRunning, "Attempt to call producer before starting EmbeddedKafka instance. Call EmbeddedKafka.start() first.")
-    val p = try new KafkaProducer[String, String](mapToProps(producerConfig)) catch {
-      case e: Throwable => println(e); throw e
+    val p = try new KafkaProducer[String, String](producerConfig.props.props) catch {
+      case e: Throwable => logger.error(s"Unable to create producer.", e); throw e
     }
     _producer.set(Some(p))
     p
@@ -82,11 +80,10 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
 
   /** Starts the embedded Zookeeper server and Kafka brokers. */
   def start(): Unit = {
-
     require(_zookeeper.get.forall(!_.isRunning), "Zookeeper should not be running prior to calling 'start'.")
     require(_server.get.isEmpty, "KafkaServer should not be running prior to calling 'start'.")
 
-    val zk = new EmbeddedZookeeper(connectTo = zkConnect, tickTime = 6000)
+    val zk = new EmbeddedZookeeper(zkConnect, 6000, snapDir, dataDir)
     zk.start()
     eventually(5000, 500) {
       require(zk.isRunning, "Zookeeper must be started before proceeding with setup.")
@@ -106,7 +103,7 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
 
   /** Creates a Kafka topic and waits until it is propagated to the cluster: 1,1 */
   def createTopic(topic: String, numPartitions: Int, replicationFactor: Int): Unit = {
-    AdminUtils.createTopic(server.zkUtils, topic, numPartitions, replicationFactor) //TODO add topic config
+    AdminUtils.createTopic(server.zkUtils, topic, numPartitions, replicationFactor)
     awaitPropagation(topic, 0)
   }
 
@@ -129,19 +126,9 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
   }
 
   private def awaitPropagation(topic: String, partition: Int): Unit = {
-    def isPropagated = server.apis.metadataCache.getPartitionInfo(topic, partition) match {
-      case Some(partitionState) =>
-        val leaderAndInSyncReplicas = partitionState.leaderIsrAndControllerEpoch.leaderAndIsr
-
-        ZkUtils.getTopicPartitionLeaderAndIsrPath(topic, partition).nonEmpty &&
-          Request.isValidBrokerId(leaderAndInSyncReplicas.leader) &&
-          leaderAndInSyncReplicas.isr.nonEmpty
-
-      case _ =>
-        false
-    }
-    eventually(10000, 100) {
-      assert(isPropagated, s"Partition [$topic, $partition] metadata not propagated after timeout")
+    eventually(10000, 1000) {
+      assert(AdminUtils.topicExists(server.zkUtils, topic))
+      logger.info(s"Topic [$topic] created.")
     }
   }
 
