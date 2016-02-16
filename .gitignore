@@ -1,19 +1,36 @@
+*.class
+.cache/
+
 # SBT
 lib_managed
-project/project
-target
 .history
 .lib/
 dist/*
 lib_managed/
 src_managed/
+target
+**/target/
+lib_managed/
+src_managed/
 project/project
+project/boot/
+project/plugins/project/
 
-# Worksheets (Eclipse or IntelliJ)
-*.sc
+# Mac
+.DS_Store
+
+# Log files
+/logs
+*.log
+checkpoint
 
 # IntelliJ
 .idea
+.idea_modules
+*.iml
+
+# Worksheets (Eclipse or IntelliJ)
+*.sc
 
 # Eclipse
 .cache*
@@ -23,10 +40,3 @@ project/project
 .settings
 .target
 .worksheet
-
-# Mac
-.DS_Store
-
-# Log files
-/logs
-*.log
