@@ -35,7 +35,7 @@ trait EmbeddedIO {
     val dir = new JFile(tmp.resolve(name).toString)
     registerShutdownDeleteDir(dir)
 
-    Runtime.getRuntime.addShutdownHook(new Thread("delete embedded server temp dir " + dir) {
+    sys.runtime.addShutdownHook(new Thread("delete embedded server temp dir " + dir) {
       override def run() {
         if (!hasRootAsShutdownDeleteDir(dir)) deleteRecursively(dir)
       }

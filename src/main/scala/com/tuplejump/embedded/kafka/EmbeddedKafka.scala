@@ -34,8 +34,8 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
   def this() = this(DefaultKafkaConnect, DefaultZookeeperConnect)
 
   /** Should an error occur, make sure it shuts down. */
-  Runtime.getRuntime.addShutdownHook(new Thread("Shutting down embedded kafka") {
-    override def run() { shutdown() }
+  sys.runtime.addShutdownHook(new Thread("Shutting down embedded kafka") {
+    override def run(): Unit = shutdown()
   })
 
   val config = brokerConfig(kafkaConnect, zkConnect)
@@ -46,7 +46,7 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
     new KafkaConfig(props)
   }
 
-  val producerConfig: Properties = super.producerConfig(
+  val producerConfig: Map[String,String] = super.producerConfig(
     config, classOf[StringSerializer], classOf[StringSerializer]
   )
 
@@ -73,7 +73,7 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
 
   def producer: KafkaProducer[String, String] = _producer.get.getOrElse {
     require(isRunning, "Attempt to call producer before starting EmbeddedKafka instance. Call EmbeddedKafka.start() first.")
-    val p = try new KafkaProducer[String, String](producerConfig) catch {
+    val p = try new KafkaProducer[String, String](mapToProps(producerConfig)) catch {
       case e: Throwable => println(e); throw e
     }
     _producer.set(Some(p))

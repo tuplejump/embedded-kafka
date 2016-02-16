@@ -3,7 +3,7 @@
 import sbt._
 
 object Version {
-  val AkkaStreams            = "2.0" //1.0
+  final val Akka             = "2.4.1"
   final val Kafka            = "0.9.0.0"
   final val Logback          = "1.0.7"
   final val JavaVersion      = scala.util.Properties.javaVersion
@@ -17,16 +17,13 @@ object Version {
   def cross(version: String): Unit =
     println(s"Scala: $version Java: $JavaVersion")
 
-  /* initialize := assert(
-     Integer.parseInt(javaVersion.split("\\.")(1)) >= 8,
-     "Java 8 or above required.")*/
-
 }
 
 object Library {
-  val akkaStreams      = "com.typesafe.akka"          %% "akka-stream-experimental"     % Version.AkkaStreams
-  val akkaHttp         = "com.typesafe.akka"          %% "akka-http-core-experimental"  % Version.AkkaStreams
-  val akkaTestKit      = "com.typesafe.akka"          %% "akka-testkit"                 % Version.AkkaStreams
+  val akkaStreams      = "com.typesafe.akka"          %% "akka-stream-experimental"     % Version.Akka
+  val akkaHttp         = "com.typesafe.akka"          %% "akka-http-core-experimental"  % Version.Akka
+  val akkaActor        = "com.typesafe.akka"          %% "akka-actor"                   % Version.Akka
+  val akkaTestKit      = "com.typesafe.akka"          %% "akka-testkit"                 % Version.Akka
   val kafka            = "org.apache.kafka"           %% "kafka"                        % Version.Kafka excludeAll(Exclusions.forKafka: _*)
   val logback          = "ch.qos.logback"             % "logback-classic"               % Version.Logback
   val scalaCheck       = "org.scalacheck"             %% "scalacheck"                   % Version.ScalaCheck

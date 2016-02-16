@@ -20,8 +20,12 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import org.scalatest.time.{Millis, Span}
 
-class InitialSpec extends AbstractSpec with Eventually with Assertions with Logging {
+class InitialSpec extends AbstractSpec with Eventually with Logging {
+
+  private val timeout = Timeout(Span(10000, Millis))
 
   "Initially, EmbeddedKafka" must {
     val kafka = new EmbeddedKafka()
@@ -32,14 +36,13 @@ class InitialSpec extends AbstractSpec with Eventually with Assertions with Logg
     "start embedded zookeeper and embedded kafka" in {
       kafka.isRunning should be (false)
       kafka.start()
-      eventually(10000, 100)(assert(kafka.isRunning, "Kafka must be running."))
+      eventually(timeout)(kafka.isRunning)
     }
     "create a topic" in {
       kafka.createTopic(topic, 1, 1)
     }
     "publish messages to the embedded kafka instance" in {
       val config = kafka.consumerConfig(
-        isNewConsumer = false,
         group = "some.group",
         kafkaConnect = DefaultKafkaConnect,
         zkConnect = DefaultZookeeperConnect,
@@ -51,14 +54,13 @@ class InitialSpec extends AbstractSpec with Eventually with Assertions with Logg
 
       kafka.sendMessages(topic, batch1)
       logger.info(s"Publishing ${batch1.size} messages...")
-
-      eventually(10000, 10000)(assert(consumer.count.get >= batch1.size, "Consumer must have all messages."))
+      eventually(timeout)(consumer.count.get >= batch1.size)
 
       consumer.shutdown()
     }
     "shut down relatively cleanly for now" in {
       kafka.shutdown()
-      eventually(10000, 100)(assert(!kafka.isRunning))
+      eventually(timeout)(!kafka.isRunning)
     }
   }
 }

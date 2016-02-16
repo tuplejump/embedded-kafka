@@ -8,7 +8,7 @@ object Build extends sbt.Build {
 
   lazy val root = project.in(file("."))
     .settings(Settings.common ++ Seq(libraryDependencies ++= Seq(
-      Library.akkaStreams,
+      Library.akkaActor,
       Library.kafka,
       Library.logback,
       Library.scalaCheck % "test",

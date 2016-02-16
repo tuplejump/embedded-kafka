@@ -27,10 +27,13 @@ trait Settings extends EmbeddedIO {
 
   def brokerConfig(kafkaConnect: String, zkConnect: String): Map[String,String] = {
     val logDir = createTempDir("kafka-embedded-tmp").getAbsolutePath
+    val seed = kafkaConnect.split(",").head.split(":").head//TODO cleanup
     Map(
       //"broker.id" -> "0",
-      "host.name" -> kafkaConnect.split(":")(0),
+      "host.name" -> seed,
       "metadata.broker.list" -> kafkaConnect,
+      "advertised.host.name" -> seed,
+      "advertised.port" -> "9092",
       "log.dir" -> logDir,
       "log.dirs" -> logDir,
       "zookeeper.connect" -> zkConnect,
@@ -81,45 +84,30 @@ trait Settings extends EmbeddedIO {
     "fetch.purgatory.purge.interval.requests" -> "100",
     "producer.purgatory.purge.interval.requests" -> "100"
     */
-  def producerConfig(brokerConfig: Map[String,String], kSerializer: Class[_], vSerializer: Class[_]): Properties = {
-    val c = brokerConfig ++ Map(
-      "request.required.acks" -> "-1",
+  def producerConfig(brokerConfig: Map[String,String], kSerializer: Class[_], vSerializer: Class[_]): Map[String,String] =
+    Map(
       "bootstrap.servers" -> brokerConfig("metadata.broker.list"),
-      //"client.id" -> "",
-      "serializer.class" -> kSerializer.getName,
       "key.serializer" -> kSerializer.getName,
       "value.serializer" -> vSerializer.getName
     )
 
-    val props = new Properties()
-    props.putAll(c.asJava)
-    props
-  }
-
-  /** offsetPolicy = new consumer: latest,earliest,none */
-  def consumerConfig(isNewConsumer: Boolean,
-                     group: String,
+  /** offsetPolicy = latest,earliest,none */
+  def consumerConfig(group: String,
                      kafkaConnect: String,
                      zkConnect: String,
                      offsetPolicy: String,
                      autoCommitEnabled: Boolean,
                      kDeserializer: Class[_],
                      vDeserializer: Class[_]): Map[String,String] =
-    newConsumerConfig(isNewConsumer, zkConnect) ++ Map(
-      //consumer.timeout.ms
+    Map(
       "bootstrap.servers" -> kafkaConnect,
       "group.id" -> group,
       "auto.offset.reset" -> offsetPolicy,
       "enable.auto.commit" -> autoCommitEnabled.toString,
-      //"auto.commit.interval.ms" -> "1000",
-      //"session.timeout.ms" -> "30000",
       "key.deserializer" -> kDeserializer.getName,
-      "value.deserializer" -> vDeserializer.getName)
+      "value.deserializer" -> vDeserializer.getName,
+      "zookeeper.connect" -> zkConnect)
 
-  //TODO more
-  private def newConsumerConfig(isNewConsumer: Boolean, zkConnect: String): Map[String,String] = {
-    if(isNewConsumer) Map.empty else Map("zookeeper.connect" -> zkConnect)
-  }
 
   def kafkaParams(group: String,
                   kafkaConnect: String,
@@ -128,8 +116,11 @@ trait Settings extends EmbeddedIO {
                   autoCommitEnabled: Boolean,
                   kDeserializer: Class[_],
                   vDeserializer: Class[_]): Map[String, String] =
-    consumerConfig(
-      isNewConsumer = false,
-      group, kafkaConnect, zkConnect, offsetPolicy, autoCommitEnabled, kDeserializer, vDeserializer)
+    consumerConfig(group, kafkaConnect, zkConnect, offsetPolicy, autoCommitEnabled, kDeserializer, vDeserializer)
 
+  def mapToProps(values: Map[String,String]): Properties = {
+    val props = new Properties()
+    props.putAll(values.asJava)
+    props
+  }
 }
