@@ -65,5 +65,6 @@ object EmbeddedIO extends Logging {
   protected def deleteRecursively(delete: JFile): Unit =
     for {
       file <- Option(delete)
+      if file.exists()
     } FileUtils.deleteDirectory(file)
 }
