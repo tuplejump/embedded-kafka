@@ -134,9 +134,8 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
 
     for (v <- _producer.get) v.close()
     for (v <- _server.get) {
-      //https://issues.apache.org/jira/browse/KAFKA-1887 ?
+      //https://issues.apache.org/jira/browse/KAFKA-1887
       v.kafkaController.shutdown()
-      v.getLogManager.cleanupLogs()
       v.shutdown()
       v.awaitShutdown()
     }
