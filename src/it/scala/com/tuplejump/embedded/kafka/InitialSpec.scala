@@ -17,7 +17,6 @@
 package com.tuplejump.embedded.kafka
 
 import java.util.concurrent.{TimeUnit, CountDownLatch}
-import java.util.concurrent.atomic.AtomicInteger
 
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.scalatest.concurrent.Eventually
