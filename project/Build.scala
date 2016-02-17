@@ -12,8 +12,8 @@ object Build extends sbt.Build {
       Library.kafka,
       Library.logback,
       Library.commonsIo,
-      Library.Test.scalaCheck % "test",
-      Library.Test.scalaTest  % "test",
+      Library.Test.scalaCheck % "test, it",
+      Library.Test.scalaTest  % "test, it",
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, minor)) if minor < 11 => Library.Cross.slf4j
         case _                              => Library.Cross.scalaLogging

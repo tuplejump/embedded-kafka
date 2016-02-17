@@ -18,6 +18,7 @@ package com.tuplejump.embedded.kafka
 
 import java.io.{ File => JFile }
 
+import scala.util.Try
 import org.apache.commons.io.FileUtils
 
 object EmbeddedIO extends Logging {
@@ -65,6 +66,5 @@ object EmbeddedIO extends Logging {
   protected def deleteRecursively(delete: JFile): Unit =
     for {
       file <- Option(delete)
-      if file.exists()
-    } FileUtils.deleteDirectory(file)
+    } Try(FileUtils.deleteDirectory(file))
 }

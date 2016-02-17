@@ -32,7 +32,6 @@ class InitialSpec extends AbstractSpec with Eventually with Logging {
     val topic = "test"
     val total = 1000
     val latch = new CountDownLatch(total)
-    val batch1 = for (n <- 0 until total) yield s"message-test-$n"
 
     "start embedded zookeeper and embedded kafka" in {
       kafka.isRunning should be (false)
@@ -52,6 +51,8 @@ class InitialSpec extends AbstractSpec with Eventually with Logging {
         kDeserializer = classOf[StringDeserializer],
         vDeserializer = classOf[StringDeserializer])
       val consumer = new SimpleConsumer(latch, config, topic, "consumer.group", 1, 1)
+
+      val batch1 = for (n <- 0 until total) yield s"message-test-$n"
 
       logger.info(s"Publishing ${batch1.size} messages...")
 
