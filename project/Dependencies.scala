@@ -3,7 +3,7 @@
 import sbt._
 
 object Version {
-  final val Akka             = "2.4.1"
+  final val Akka             = "2.3.14"
   final val CommonsIo        = "2.4"
   final val Kafka            = "0.9.0.0"
   final val Logback          = "1.0.7"
