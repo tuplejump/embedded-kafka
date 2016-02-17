@@ -35,7 +35,7 @@ object EmbeddedIO extends Logging {
     if (logsDir.exists()) deleteRecursively(logsDir)
     dir.mkdir
 
-    logger.info(s"Created dir ${dir.getAbsolutePath}")
+    logger.info(s"Created dir ${dir.getAbsolutePath.replace("./", "")}")
 
     registerShutdownDeleteDir(dir)
 

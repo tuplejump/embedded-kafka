@@ -11,7 +11,8 @@
     </root>
 
     <logger name="com.tuplejump" level="DEBUG"/>
-    <logger name="kafka" level="WARN" />
+    <logger name="kafka" level="INFO" />
+    <logger name="org.apache.kafka" level="INFO" />
     <logger name="org.apache.zookeeper.server.PrepRequestProcessor" level="ERROR"/>
     <logger name="org.apache.zookeeper.ZooKeeper" level="WARN"/>
     <logger name="org.apache.zookeeper.ClientCnxn" level="WARN"/>

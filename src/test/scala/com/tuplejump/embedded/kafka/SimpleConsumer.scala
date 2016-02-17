@@ -17,8 +17,7 @@
 package com.tuplejump.embedded.kafka
 
 import java.util.Properties
-import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{CountDownLatch, Executors}
 
 import scala.util.Try
 import kafka.serializer.StringDecoder
@@ -29,7 +28,7 @@ import kafka.consumer.{ Consumer, ConsumerConfig }
  * TODO update to new consumer.
  */
 class SimpleConsumer(
-    val count: AtomicInteger,
+    val latch: CountDownLatch,
     consumerConfig: Map[String, String],
     topic: String,
     groupId: String,
@@ -46,10 +45,10 @@ class SimpleConsumer(
 
   for (stream <- streams) {
     executor.submit(new Runnable() {
-      def run() {
+      def run(): Unit = {
         for (s <- stream) {
           while (s.iterator.hasNext) {
-            count.getAndIncrement
+            latch.countDown()
           }
         }
       }

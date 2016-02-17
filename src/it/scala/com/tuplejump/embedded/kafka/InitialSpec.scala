@@ -16,6 +16,7 @@
 
 package com.tuplejump.embedded.kafka
 
+import java.util.concurrent.{TimeUnit, CountDownLatch}
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.apache.kafka.common.serialization.StringDeserializer
@@ -30,8 +31,9 @@ class InitialSpec extends AbstractSpec with Eventually with Logging {
   "Initially, EmbeddedKafka" must {
     val kafka = new EmbeddedKafka()
     val topic = "test"
-    val atomic = new AtomicInteger(0)
-    val batch1 = for (n <- 0 until 1000) yield s"message-test-$n"
+    val total = 1000
+    val latch = new CountDownLatch(total)
+    val batch1 = for (n <- 0 until total) yield s"message-test-$n"
 
     "start embedded zookeeper and embedded kafka" in {
       kafka.isRunning should be (false)
@@ -46,15 +48,17 @@ class InitialSpec extends AbstractSpec with Eventually with Logging {
         group = "some.group",
         kafkaConnect = kafka.kafkaConfig.hostName + ":" + kafka.kafkaConfig.port,
         zkConnect = kafka.kafkaConfig.zkConnect,
-        offsetPolicy = "largest",//different with new consumer.
+        offsetPolicy = "largest",//latest with new consumer
         autoCommitEnabled = true,
         kDeserializer = classOf[StringDeserializer],
         vDeserializer = classOf[StringDeserializer])
-      val consumer = new SimpleConsumer(atomic, config, topic, "consumer.group", 1, 1)
+      val consumer = new SimpleConsumer(latch, config, topic, "consumer.group", 1, 1)
+
+      logger.info(s"Publishing ${batch1.size} messages...")
 
       kafka.sendMessages(topic, batch1)
-      logger.info(s"Publishing ${batch1.size} messages...")
-      eventually(timeout)(consumer.count.get >= batch1.size)
+      latch.await(3000, TimeUnit.MILLISECONDS)
+      latch.getCount should be (0)
 
       consumer.shutdown()
     }

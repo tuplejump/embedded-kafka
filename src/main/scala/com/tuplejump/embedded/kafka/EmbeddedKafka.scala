@@ -101,10 +101,13 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
     _isRunning.set(true) // TODO add a test
   }
 
-  /** Creates a Kafka topic and waits until it is propagated to the cluster: 1,1 */
+  /** Creates a Kafka topic and waits until it is propagated to the cluster. */
   def createTopic(topic: String, numPartitions: Int, replicationFactor: Int): Unit = {
     AdminUtils.createTopic(server.zkUtils, topic, numPartitions, replicationFactor)
-    awaitPropagation(topic, 0)
+    eventually(10000, 1000) {
+      assert(AdminUtils.topicExists(server.zkUtils, topic))
+      logger.info(s"Topic [$topic] created.")
+    }
   }
 
   /** Send the messages to the Kafka broker */
@@ -123,13 +126,6 @@ final class EmbeddedKafka(kafkaConnect: String, zkConnect: String)
   private val toRecord = (topic: String, group: Option[String], message: String) => group match {
     case Some(k) => new ProducerRecord[String, String](topic, k, message)
     case _       => new ProducerRecord[String, String](topic, message)
-  }
-
-  private def awaitPropagation(topic: String, partition: Int): Unit = {
-    eventually(10000, 1000) {
-      assert(AdminUtils.topicExists(server.zkUtils, topic))
-      logger.info(s"Topic [$topic] created.")
-    }
   }
 
   /** Shuts down the embedded servers.*/
