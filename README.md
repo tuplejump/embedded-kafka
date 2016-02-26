@@ -8,7 +8,7 @@ This is just the initial commit, more to come including code improvements, confi
 
  - Quick and easy prototyping, testing 
  - Safe demos - not reliant on network
- - Compatible with Apache Kafka 0.9.0.0
+ - Compatible with Apache Kafka: 0.9.0.0, 0.9.0.1
  - Compatible with Scala 2.10 and 2.11
  - Embedded Zookeeper which starts automatically when starting Kafka
  - Simple Kafka consumer
