@@ -6,20 +6,39 @@ import de.heikoseeberger.sbtheader.AutomateHeaderPlugin
 
 object Build extends sbt.Build {
 
+  final val Akka_Scala211   = "2.4.1"
+  final val Akka_Scala210   = "2.3.14"
+
   lazy val root = project.in(file("."))
-    .settings(Settings.common ++ Seq(libraryDependencies ++= Seq(
-      Library.akkaActor,
-      Library.kafka,
-      Library.logback,
-      Library.commonsIo,
-      Library.Test.scalaCheck % "test, it",
-      Library.Test.scalaTest  % "test, it",
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, minor)) if minor < 11 => Library.Cross.slf4j
-        case _                              => Library.Cross.scalaLogging
-      }
-    )))
+    .settings(Settings.common ++ Seq(libraryDependencies ++=
+      Seq(
+        "org.apache.kafka"               %% "kafka"          % "0.9.0.1" excludeAll(kafkaExcludes: _*),
+        "ch.qos.logback"                 % "logback-classic" % "1.0.7",
+        "commons-io"                     %  "commons-io"     % "2.4",
+        "org.scalacheck"                 %% "scalacheck"     % "1.12.5"    % "test, it",
+        "org.scalatest"                  %% "scalatest"      % "2.2.5"     % "test, it"
+      ) ++
+      (CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, minor)) if minor < 11 =>
+          Seq(
+            "com.typesafe.akka"          %% "akka-actor"   % Akka_Scala210,
+            "com.typesafe.akka"          %% "akka-testkit" % Akka_Scala210 % "test, it",
+            "org.slf4j"                  % "slf4j-api"     % "1.7.13")
+        case _ =>
+          Seq(
+            "com.typesafe.akka"          %% "akka-actor"    % Akka_Scala211,
+            "com.typesafe.akka"          %% "akka-testkit"  % Akka_Scala211 % "test, it",
+            "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0")
+      })))
   .enablePlugins(AutomateHeaderPlugin) configs IntegrationTest
+
+  val kafkaExcludes = Seq(
+    ExclusionRule("com.sun.jmx", "jmxri"),
+    ExclusionRule("com.sun.jdmk", "jmxtools"),
+    ExclusionRule("net.sf.jopt-simple", "jopt-simple"),
+    ExclusionRule("org.slf4j", "slf4j-simple"),
+    ExclusionRule("org.slf4j", "slf4j-log4j12")
+  )
 
 }
 
@@ -32,9 +51,12 @@ object Settings extends sbt.Build {
   import org.scalastyle.sbt.ScalastylePlugin._
   import scoverage.ScoverageKeys
   //import com.typesafe.sbt.GitPlugin
-  //import com.scalapenos.sbt.prompt.SbtPrompt.autoImport.{promptTheme, ScalapenosTheme}
 
   val versionStatus = settingKey[Unit]("The Scala version used in cross-build reapply for '+ package', '+ publish'.")
+
+  final val javaVersion = scala.util.Properties.javaVersion
+
+  final val javaBinaryVersion = javaVersion.dropRight(5)
 
   lazy val buildSettings = Seq(
     name := "embedded-kafka",
@@ -54,13 +76,15 @@ object Settings extends sbt.Build {
           </developer>
         </developers>,
 
-    crossScalaVersions := Version.Scala,
+    crossScalaVersions := Seq("2.11.7", "2.10.5"),
 
     crossVersion := CrossVersion.binary,
 
     scalaVersion := sys.props.getOrElse("scala.version", crossScalaVersions.value.head),
 
-    versionStatus := Version.cross(scalaVersion.value),
+    versionStatus := {
+        println(s"Scala: ${scalaVersion.value} Java: $javaVersion")
+    },
 
     HeaderPlugin.autoImport.headers := Map(
       "scala" -> Apache2_0("2016", "Tuplejump"),
@@ -75,9 +99,6 @@ object Settings extends sbt.Build {
     cancelable in Global := true,
 
     crossPaths in ThisBuild := true,
-
-    //GitPlugin.autoImport.git.useGitDescribe := true,
-    //promptTheme := ScalapenosTheme,
 
     logBuffered in Compile := false,
     logBuffered in Test := false,
@@ -112,8 +133,8 @@ object Settings extends sbt.Build {
       }),
 
     javacOptions ++= encoding ++ Seq(
-      "-source", Version.JavaBinary,
-      "-target", Version.JavaBinary,
+      "-source", javaBinaryVersion,
+      "-target", javaBinaryVersion,
       "-Xmx1G",
       "-Xlint:unchecked",
       "-Xlint:deprecation"
