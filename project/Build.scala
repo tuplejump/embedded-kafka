@@ -8,33 +8,22 @@ object Build extends sbt.Build {
 
   lazy val root = project.in(file("."))
     .settings(Settings.common)
-    .settings(Seq(libraryDependencies ++=
-      Seq(
-        "org.apache.kafka"               %% "kafka"          % "0.9.0.1" excludeAll(kafkaExcludes: _*),
+    .settings(Seq(libraryDependencies ++= Seq(
+        "org.apache.kafka"               %% "kafka"          % "0.9.0.1",
         "ch.qos.logback"                 % "logback-classic" % "1.0.7",
         "commons-io"                     %  "commons-io"     % "2.4",
         "org.scalacheck"                 %% "scalacheck"     % "1.12.5"    % "test, it",
         "org.scalatest"                  %% "scalatest"      % "2.2.5"     % "test, it"
       ) ++
       (CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, minor)) if minor < 11 =>
-          Seq(
+        case Some((2, minor)) if minor < 11 => Seq(
             "com.typesafe.akka"          %% "akka-actor"   % "2.3.14",
             "org.slf4j"                  % "slf4j-api"     % "1.7.13")
-        case _ =>
-          Seq(
+        case _ => Seq(
             "com.typesafe.akka"          %% "akka-actor"    % "2.4.1",
             "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0")
       })))
   .enablePlugins(AutomateHeaderPlugin) configs IntegrationTest
-
-  val kafkaExcludes = Seq(
-    ExclusionRule("com.sun.jmx", "jmxri"),
-    ExclusionRule("com.sun.jdmk", "jmxtools"),
-    ExclusionRule("net.sf.jopt-simple", "jopt-simple"),
-    ExclusionRule("org.slf4j", "slf4j-simple"),
-    ExclusionRule("org.slf4j", "slf4j-log4j12")
-  )
 
 }
 
