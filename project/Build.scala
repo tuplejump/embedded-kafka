@@ -6,11 +6,9 @@ import de.heikoseeberger.sbtheader.AutomateHeaderPlugin
 
 object Build extends sbt.Build {
 
-  final val Akka_Scala211   = "2.4.1"
-  final val Akka_Scala210   = "2.3.14"
-
   lazy val root = project.in(file("."))
-    .settings(Settings.common ++ Seq(libraryDependencies ++=
+    .settings(Settings.common)
+    .settings(Seq(libraryDependencies ++=
       Seq(
         "org.apache.kafka"               %% "kafka"          % "0.9.0.1" excludeAll(kafkaExcludes: _*),
         "ch.qos.logback"                 % "logback-classic" % "1.0.7",
@@ -21,13 +19,11 @@ object Build extends sbt.Build {
       (CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, minor)) if minor < 11 =>
           Seq(
-            "com.typesafe.akka"          %% "akka-actor"   % Akka_Scala210,
-            "com.typesafe.akka"          %% "akka-testkit" % Akka_Scala210 % "test, it",
+            "com.typesafe.akka"          %% "akka-actor"   % "2.3.14",
             "org.slf4j"                  % "slf4j-api"     % "1.7.13")
         case _ =>
           Seq(
-            "com.typesafe.akka"          %% "akka-actor"    % Akka_Scala211,
-            "com.typesafe.akka"          %% "akka-testkit"  % Akka_Scala211 % "test, it",
+            "com.typesafe.akka"          %% "akka-actor"    % "2.4.1",
             "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0")
       })))
   .enablePlugins(AutomateHeaderPlugin) configs IntegrationTest
@@ -50,7 +46,6 @@ object Settings extends sbt.Build {
   import com.typesafe.tools.mima.plugin.MimaPlugin._
   import org.scalastyle.sbt.ScalastylePlugin._
   import scoverage.ScoverageKeys
-  //import com.typesafe.sbt.GitPlugin
 
   val versionStatus = settingKey[Unit]("The Scala version used in cross-build reapply for '+ package', '+ publish'.")
 
@@ -76,7 +71,7 @@ object Settings extends sbt.Build {
           </developer>
         </developers>,
 
-    crossScalaVersions := Seq("2.11.7", "2.10.5"),
+    crossScalaVersions := Seq("2.11.7", "2.10.6"),
 
     crossVersion := CrossVersion.binary,
 
