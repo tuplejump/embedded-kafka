@@ -31,9 +31,9 @@ Not pushed to sonatype yet, so for now you do need to build and publish to your 
 ## Scala Version
 This project uses Scala 2.11 by default. To build against Scala 2.10 vs 2.11 run 
     
-    sbt -Dscala.version=2.10.5 
-    sbt -Dscala.version=2.10.5 test
-    sbt -Dscala.version=2.10.5 publish-local
+    sbt -Dscala.version=2.10.6 
+    sbt -Dscala.version=2.10.6 test
+    sbt -Dscala.version=2.10.6 publish-local
     
 ### Cross Build
 Cross build both Scala versions by starting sbt then running these or other SBT tasks:
