@@ -57,7 +57,7 @@ class InitialSpec extends AbstractSpec with Eventually with Logging {
       logger.info(s"Publishing ${batch1.size} messages...")
 
       kafka.sendMessages(topic, batch1)
-      latch.await(3000, TimeUnit.MILLISECONDS)
+      latch.await(10000, TimeUnit.MILLISECONDS)
       latch.getCount should be (0)
 
       consumer.shutdown()

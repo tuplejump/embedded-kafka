@@ -25,7 +25,7 @@ import kafka.consumer.{ Consumer, ConsumerConfig }
 
 /**
  * Very simple consumer of a single Kafka topic.
- * TODO update to new consumer.
+ * TODO this is the old consumer. Update to new consumer.
  */
 class SimpleConsumer(
     val latch: CountDownLatch,

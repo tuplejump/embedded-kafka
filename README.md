@@ -8,7 +8,7 @@ This is just the initial commit, more to come including code improvements, confi
 
  - Quick and easy prototyping, testing 
  - Safe demos - not reliant on network
- - Compatible with Apache Kafka 0.9.0.0
+ - Compatible with Apache Kafka: 0.9.0.0, 0.9.0.1
  - Compatible with Scala 2.10 and 2.11
  - Embedded Zookeeper which starts automatically when starting Kafka
  - Simple Kafka consumer
@@ -31,9 +31,9 @@ Not pushed to sonatype yet, so for now you do need to build and publish to your 
 ## Scala Version
 This project uses Scala 2.11 by default. To build against Scala 2.10 vs 2.11 run 
     
-    sbt -Dscala.version=2.10.5 
-    sbt -Dscala.version=2.10.5 test
-    sbt -Dscala.version=2.10.5 publish-local
+    sbt -Dscala.version=2.10.6 
+    sbt -Dscala.version=2.10.6 test
+    sbt -Dscala.version=2.10.6 publish-local
     
 ### Cross Build
 Cross build both Scala versions by starting sbt then running these or other SBT tasks:
