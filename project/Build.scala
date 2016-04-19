@@ -7,7 +7,7 @@ import de.heikoseeberger.sbtheader.AutomateHeaderPlugin
 object Build extends sbt.Build {
 
   lazy val root = project.in(file("."))
-    .settings(Settings.common)
+    .settings(Settings.common ++ Settings.publishSettings)
     .settings(Seq(libraryDependencies ++= Seq(
         "org.apache.kafka"               %% "kafka"          % "0.9.0.1",
         "ch.qos.logback"                 % "logback-classic" % "1.0.7",
@@ -196,4 +196,16 @@ object Settings extends sbt.Build {
     binaryIssueFilters ++= Seq.empty
   )
 
+  lazy val publishSettings = Seq(
+    publishMavenStyle := true,
+    publishTo := {
+      val nexus = "https://oss.sonatype.org/"
+      if (isSnapshot.value)
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+    },
+    publishArtifact in Test := false,
+    pomIncludeRepository := { _ => false }
+  )
 }

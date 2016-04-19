@@ -1,9 +1,6 @@
 # Embedded Kafka[![Build Status](https://travis-ci.org/tuplejump/embedded-kafka.svg)](http://travis-ci.org/tuplejump/embedded-kafka)
 Embedded Kafka for demos, testing and quick prototyping. Much is taken right from the Apache Spark Streaming Kafka test files.
 
-## Status
-This is just the initial commit, more to come including code improvements, configuration improvements/additions.
-
 ## Features
 
  - Quick and easy prototyping, testing 
@@ -20,13 +17,6 @@ This is just the initial commit, more to come including code improvements, confi
  - Additional and improved configuration
  - Documentation
  - And much more
-      
-## Build       
-Not pushed to sonatype yet, so for now you do need to build and publish to your local ivy repo:
-
-    sbt test
-    sbt it:test
-    sbt publish-local # binaries
   
 ## Scala Version
 This project uses Scala 2.11 by default. To build against Scala 2.10 vs 2.11 run 
